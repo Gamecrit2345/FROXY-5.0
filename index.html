@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="fil">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Froxy 5.0 - Premium NSFW Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(16px); }
+        .neon { text-shadow: 0 0 15px rgb(236 72 153); }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="flex justify-between items-center mb-10">
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center text-3xl">🔥</div>
+                <h1 class="text-5xl font-bold tracking-tighter neon">FROXY <span class="text-pink-500">5.0</span></h1>
+            </div>
+            <div onclick="toggleNSFW()" id="nsfw-btn" 
+                 class="px-6 py-3 bg-zinc-900 hover:bg-zinc-800 rounded-full flex items-center gap-3 cursor-pointer border border-pink-500/50">
+                <i class="fas fa-fire text-pink-500"></i>
+                <span id="nsfw-text" class="font-medium">NSFW ON</span>
+            </div>
+        </div>
+
+        <div class="max-w-3xl mx-auto mb-12">
+            <div class="glass border border-white/10 rounded-3xl p-2">
+                <div class="flex items-center bg-zinc-900 rounded-3xl px-7 py-6">
+                    <input id="search-input" type="text" 
+                           class="flex-1 bg-transparent outline-none text-xl placeholder-zinc-500"
+                           placeholder="Hanapin ang best 4K porn, videos, models...">
+                    <button onclick="performSearch()" 
+                            class="ml-4 bg-gradient-to-r from-pink-500 to-purple-600 px-10 py-4 rounded-3xl font-semibold flex items-center gap-3 hover:scale-105 transition">
+                        <i class="fas fa-search"></i> SEARCH
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </div>
+
+    <script>
+        let nsfwEnabled = true;
+        function toggleNSFW() {
+            nsfwEnabled = !nsfwEnabled;
+            document.getElementById('nsfw-text').textContent = nsfwEnabled ? 'NSFW ON' : 'NSFW OFF';
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('search-input').value.trim();
+            if (!query) return;
+
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = <div class="col-span-2 text-center py-20"><i class="fas fa-spinner fa-spin text-5xl text-pink-500"></i><p class="mt-6">Froxy naghahanap ng pinakamainit na content...</p></div>;
+
+            try {
+                const res = await fetch('/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, nsfw: nsfwEnabled })
+                });
+                const data = await res.json();
+
+                let html = '';
+                if (data.images) {
+                    html += <div class="col-span-2"><h2 class="text-2xl font-semibold mb-6 flex items-center gap-3"><i class="fas fa-images"></i> Hot Images</h2><div class="grid grid-cols-2 md:grid-cols-4 gap-4">;
+                    data.images.forEach(img => {
+                        html += `
+                            <a href="${img.image}" target="_blank" class="group relative overflow-hidden rounded-3xl aspect-video bg-black">
+                                <img src="${img.image}" class="w-full h-full object-cover group-hover:scale-110 transition" onerror="this.style.display='none'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition p-4 flex items-end">
+                                    <p class="text-xs line-clamp-2">${img.title}</p>
+                                </div>
+                            </a>`;
+                    });
+                    html += '</div></div>';
+                }
+
+                if (data.text) {
+                    html += <div class="col-span-2 mt-12"><h2 class="text-2xl font-semibold mb-6">Best Results</h2>;
+                    data.text.forEach(r => {
+                        html += `
+                            <a href="${r.href}" target="_blank" class="block mb-8 group">
+                                <div class="glass p-6 rounded-3xl hover:border-pink-500/30 border border-white/10 transition">
+                                    <h3 class="font-semibold text-lg group-hover:text-pink-400">${r.title}</h3>
+                                    <p class="text-zinc-400 mt-3 line-clamp-3">${r.body}</p>
+                                    <div class="text-xs text-pink-500 mt-4 break-all">${r.href}</div>
+                                </div>
+                            </a>`;
+                    });
+                    html += '</div>';
+                }
+
+                resultsDiv.innerHTML = html || '<p class="col-span-2 text-center py-20 text-zinc-500">Walang nahanap. Subukan ulit.</p>';
+            } catch(e) {
+                resultsDiv.innerHTML = <p class="col-span-2 text-red-400 text-center py-20">May error. Subukan ulit.</p>;
+            }
+        }
+
+        document.getElementById('search-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter') performSearch();
+        });
+    </script>
+</body>
+</html>
